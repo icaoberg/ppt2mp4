@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate ppt2mp4
+
+python "$SCRIPT_DIR/ppt2mp4.py" "$@"
