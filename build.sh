@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE="ppt2mp4.sif"
-DEF="ppt2mp4.def"
+IMAGE="ppt2vid.sif"
+DEF="ppt2vid.def"
 
 if [[ ! -f "$DEF" ]]; then
     echo "Error: definition file '$DEF' not found."

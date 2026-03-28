@@ -1,15 +1,26 @@
 #!/usr/bin/env python3
 """
-PPT to Video converter with AI voice narration.
+ppt2vid — PPT to Video converter with AI voice narration.
 
-Converts a PowerPoint presentation to an MP4 video where an AI voice
-reads the presenter notes for each slide. Slides without notes are shown
-silently for a configurable duration.
+Converts a PowerPoint presentation (.pptx/.ppt) to a video file where a
+Microsoft Neural TTS voice reads the presenter notes for each slide.
+Slides without notes are displayed silently for a configurable duration.
 
-Dependencies (install with pip):
+Supported output formats (selected automatically from the output filename):
+    .mp4  .m4v            H.264 + AAC  (default, widest compatibility)
+    .ogv  .oggv           Theora + Vorbis  (open format)
+    .avi                  H.264 + MP3  (legacy compatibility)
+    .wmv                  WMV2 + WMA2  (Windows Media)
+
+Python dependencies:
     pip install python-pptx edge-tts "moviepy<2" pdf2image pillow
 
 System dependencies:
+    ffmpeg:
+        Ubuntu/Debian:  sudo apt-get install ffmpeg libavcodec-extra
+        macOS:          brew install ffmpeg
+        Windows:        https://ffmpeg.org/download.html
+
     LibreOffice (converts PPTX → PDF):
         Ubuntu/Debian:  sudo apt-get install libreoffice
         macOS:          brew install --cask libreoffice
@@ -21,8 +32,9 @@ System dependencies:
         Windows:        https://github.com/oschwartz10612/poppler-windows
 
 Usage:
-    python ppt_to_video.py presentation.pptx
-    python ppt_to_video.py presentation.pptx --voice en-GB-RyanNeural --silent 5
+    python ppt2vid.py presentation.pptx
+    python ppt2vid.py presentation.pptx --voice en-GB-RyanNeural --silent 5
+    python ppt2vid.py presentation.pptx --output ~/Videos/talk.mp4
 """
 
 import sys
@@ -70,6 +82,17 @@ DEFAULT_SILENCE = 3.0                  # seconds for slides without notes
 VIDEO_FPS = 24
 VIDEO_WIDTH = 1920
 VIDEO_HEIGHT = 1080
+
+# Map output file extension → ffmpeg codec settings
+FORMAT_MAP = {
+    ".mp4":  {"codec": "libx264",    "audio_codec": "aac",        "temp_suffix": ".temp.m4a"},
+    ".m4v":  {"codec": "libx264",    "audio_codec": "aac",        "temp_suffix": ".temp.m4a"},
+    ".ogv":  {"codec": "libtheora",  "audio_codec": "libvorbis",  "temp_suffix": ".temp.ogg"},
+    ".oggv": {"codec": "libtheora",  "audio_codec": "libvorbis",  "temp_suffix": ".temp.ogg"},
+    ".avi":  {"codec": "libx264",    "audio_codec": "mp3",        "temp_suffix": ".temp.mp3"},
+    ".wmv":  {"codec": "wmv2",       "audio_codec": "wmav2",      "temp_suffix": ".temp.wma"},
+}
+VALID_EXTENSIONS = list(FORMAT_MAP.keys())
 
 # ---------------------------------------------------------------------------
 # Step 1 – Extract presenter notes
@@ -191,6 +214,9 @@ def assemble_video(
     group: str = "",
     center: str = "",
     copyright: str = "",
+    codec: str = "libx264",
+    audio_codec: str = "aac",
+    temp_suffix: str = ".temp.m4a",
 ) -> None:
     """Combine slide images with their audio tracks into a single MP4."""
     if len(image_paths) != len(audio_info):
@@ -230,9 +256,9 @@ def assemble_video(
     final.write_videofile(
         output_path,
         fps=VIDEO_FPS,
-        codec="libx264",
-        audio_codec="aac",
-        temp_audiofile=str(Path(output_path).with_suffix(".temp.m4a")),
+        codec=codec,
+        audio_codec=audio_codec,
+        temp_audiofile=str(Path(output_path).with_suffix(temp_suffix)),
         remove_temp=True,
         verbose=False,
         logger=None,
@@ -249,16 +275,38 @@ def assemble_video(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Convert a PPTX presentation to an MP4 video with AI voice narration.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description=(
+            "Convert a PowerPoint presentation to a video with AI voice narration.\n"
+            "A Microsoft Neural TTS voice reads the presenter notes for each slide.\n"
+            "Slides without notes are shown silently for a configurable duration."
+        ),
+        epilog=(
+            "examples:\n"
+            "  %(prog)s talk.pptx\n"
+            "  %(prog)s talk.pptx --output ~/Videos/talk.mp4\n"
+            "  %(prog)s talk.pptx --output talk.wmv\n"
+            "  %(prog)s talk.pptx --voice en-GB-RyanNeural --silent 5\n"
+            "  %(prog)s talk.pptx --author 'Jane Smith' --group 'Research Lab'\n"
+            "\n"
+            "supported output formats:\n"
+            "  .mp4 / .m4v   H.264 + AAC      (default, widest compatibility)\n"
+            "  .ogv / .oggv  Theora + Vorbis  (open format)\n"
+            "  .avi          H.264 + MP3      (legacy compatibility)\n"
+            "  .wmv          WMV2 + WMA2      (Windows Media)\n"
+            "\n"
+            "browse available voices:\n"
+            "  edge-tts --list-voices"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("pptx_file", help="Path to the input .pptx file")
+    parser.add_argument("pptx_file", help="Path to the input .pptx/.ppt file.")
     parser.add_argument(
         "--voice",
         default=DEFAULT_VOICE,
+        metavar="NAME",
         help=(
-            "Edge TTS voice name. "
-            "Run `edge-tts --list-voices` to see available voices."
+            "Edge TTS voice name (default: %(default)s). "
+            "Run `edge-tts --list-voices` to see all available voices."
         ),
     )
     parser.add_argument(
@@ -266,32 +314,41 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=DEFAULT_SILENCE,
         metavar="SECONDS",
-        help="Duration (seconds) to show slides that have no presenter notes.",
+        help="Duration in seconds to show slides that have no presenter notes (default: %(default)s).",
     )
     parser.add_argument(
         "--output",
         default=None,
-        help="Output MP4 path. Defaults to same name/location as the input file.",
+        metavar="PATH",
+        help=(
+            "Output video path. The format is determined by the file extension "
+            f"({', '.join(VALID_EXTENSIONS)}). "
+            "Defaults to the input filename with a .mp4 extension."
+        ),
     )
     parser.add_argument(
         "--author",
         default="Ivan Cao-Berg",
-        help="Author name to embed in the video file metadata.",
+        metavar="NAME",
+        help="Author name to embed in the video metadata (default: %(default)s).",
     )
     parser.add_argument(
         "--group",
         default="Biomedical Applications Group",
-        help="Group name to embed in the video file metadata.",
+        metavar="NAME",
+        help="Group name to embed in the video metadata (default: %(default)s).",
     )
     parser.add_argument(
         "--center",
         default="Pittsburgh Supercomputing Center",
-        help="Center name to embed in the video file metadata.",
+        metavar="NAME",
+        help="Center name to embed in the video metadata (default: %(default)s).",
     )
     parser.add_argument(
         "--copyright",
         default=f"{date.today().year} Ivan Cao-Berg at the Pittsburgh Computing Center in Carnegie Mellon University",
-        help="Copyright string to embed in the video file metadata.",
+        metavar="TEXT",
+        help="Copyright string to embed in the video metadata (default: %(default)s).",
     )
     return parser.parse_args()
 
@@ -308,6 +365,11 @@ def main() -> None:
         sys.exit(1)
 
     output_path = Path(args.output).resolve() if args.output else pptx_path.with_suffix(".mp4")
+    ext = output_path.suffix.lower()
+    if ext not in FORMAT_MAP:
+        print(f"Error: unsupported output format '{ext}'. Valid extensions: {', '.join(VALID_EXTENSIONS)}")
+        sys.exit(1)
+    fmt = FORMAT_MAP[ext]
 
     print("=" * 60)
     print("PPT → Video converter")
@@ -354,7 +416,11 @@ def main() -> None:
 
         # 4. Assemble video
         print("Step 4 – Assembling video …")
-        assemble_video(image_paths, audio_info, args.silent, str(output_path), args.author, args.group, args.center, args.copyright)
+        assemble_video(
+            image_paths, audio_info, args.silent, str(output_path),
+            args.author, args.group, args.center, args.copyright,
+            **fmt,
+        )
 
     print()
     print("Done!")
