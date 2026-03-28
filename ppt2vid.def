@@ -2,10 +2,13 @@ Bootstrap: docker
 From: ubuntu:22.04
 
 %labels
-    Author Ivan Cao-Berg
+    Author icaoberg
     Group Biomedical Applications Group
     Center Pittsburgh Supercomputing Center
     Description PPT to video converter with AI voice narration
+
+%files
+    ppt2vid.py /tmp/ppt2vid.py
 
 %post
     export DEBIAN_FRONTEND=noninteractive
@@ -32,9 +35,6 @@ From: ubuntu:22.04
     mkdir -p /opt/ppt2vid
     cp /tmp/ppt2vid.py /opt/ppt2vid/ppt2vid.py
     chmod +x /opt/ppt2vid/ppt2vid.py
-
-%files
-    ppt2vid.py /tmp/ppt2vid.py
 
 %environment
     export PATH=/opt/ppt2vid:$PATH

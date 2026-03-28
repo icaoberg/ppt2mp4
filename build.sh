@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE="ppt2vid.sif"
+IMAGE="singularity-ppt2vid.sif"
 DEF="ppt2vid.def"
 
 if [[ ! -f "$DEF" ]]; then
@@ -15,7 +15,7 @@ if [[ -f "$IMAGE" ]]; then
 fi
 
 echo "Building Singularity image: $IMAGE"
-singularity build "$IMAGE" "$DEF"
+sudo singularity build "$IMAGE" "$DEF"
 
 echo "Done. Run with:"
 echo "  singularity run $IMAGE <presentation.pptx> [options]"
