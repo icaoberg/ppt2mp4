@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ppt2vid — PPT to Video converter with AI voice narration.
+ppt2movie — PPT to Video converter with AI voice narration.
 
 Converts a PowerPoint presentation (.pptx/.ppt) to a video file where a
 Microsoft Neural TTS voice reads the presenter notes for each slide.
@@ -32,9 +32,9 @@ System dependencies:
         Windows:        https://github.com/oschwartz10612/poppler-windows
 
 Usage:
-    python ppt2vid.py presentation.pptx
-    python ppt2vid.py presentation.pptx --voice en-GB-RyanNeural --silent 5
-    python ppt2vid.py presentation.pptx --output ~/Videos/talk.mp4
+    python ppt2movie.py presentation.pptx
+    python ppt2movie.py presentation.pptx --voice en-GB-RyanNeural --silent 5
+    python ppt2movie.py presentation.pptx --output ~/Videos/talk.mp4
 """
 
 import sys

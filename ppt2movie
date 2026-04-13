@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION="0.1"
+
+if [[ "${1:-}" == "--version" ]]; then
+    echo "ppt2movie $VERSION"
+    exit 0
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate ppt2movie
+
+python "$SCRIPT_DIR/ppt2movie.py" "$@"

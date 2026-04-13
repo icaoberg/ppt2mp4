@@ -1,5 +1,7 @@
 # PPT to Video Converter
 
+**Version 0.1**
+
 Converts a PowerPoint presentation (`.pptx` or `.ppt`) to an MP4 video. An AI voice reads
 the presenter notes for each slide. Slides without notes are displayed silently
 for a configurable duration.
@@ -46,7 +48,7 @@ sudo apt install libavcodec-extra
 ## Usage
 
 ```bash
-python ppt2vid.py <presentation.pptx> [options]
+python ppt2movie.py <presentation.pptx> [options]
 ```
 
 The output MP4 is saved in the same directory as the input file, using the same
@@ -68,19 +70,19 @@ base filename (e.g. `presentation.pptx` → `presentation.mp4`).
 
 ```bash
 # Basic usage
-python ppt2vid.py "Taming Data Dragons - Introduction.pptx"
+python ppt2movie.py "Taming Data Dragons - Introduction.pptx"
 
 # Use a British male voice
-python ppt2vid.py presentation.pptx --voice en-GB-RyanNeural
+python ppt2movie.py presentation.pptx --voice en-GB-RyanNeural
 
 # Show silent slides for 5 seconds
-python ppt2vid.py presentation.pptx --silent 5
+python ppt2movie.py presentation.pptx --silent 5
 
 # Specify a custom output path
-python ppt2vid.py presentation.pptx --output ~/Videos/output.mp4
+python ppt2movie.py presentation.pptx --output ~/Videos/output.mp4
 
 # Override metadata
-python ppt2vid.py presentation.pptx --author "Jane Smith" --group "Research Lab"
+python ppt2movie.py presentation.pptx --author "Jane Smith" --group "Research Lab"
 ```
 
 ### Browsing available voices
@@ -124,4 +126,4 @@ truncates to the shorter of the two lists and prints a warning.
 
 **Poor slide rendering quality**
 Increase the DPI by editing `dpi=150` in `convert_pptx_to_images()` inside
-`ppt2vid.py`. Higher DPI produces sharper images but takes longer.
+`ppt2movie.py`. Higher DPI produces sharper images but takes longer.

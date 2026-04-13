@@ -8,7 +8,7 @@ From: ubuntu:22.04
     Description PPT to video converter with AI voice narration
 
 %files
-    ppt2vid.py /tmp/ppt2vid.py
+    ppt2movie.py /tmp/ppt2movie.py
 
 %post
     export DEBIAN_FRONTEND=noninteractive
@@ -32,23 +32,23 @@ From: ubuntu:22.04
         pillow
 
     # Install the script
-    mkdir -p /opt/ppt2vid
-    cp /tmp/ppt2vid.py /opt/ppt2vid/ppt2vid.py
-    chmod +x /opt/ppt2vid/ppt2vid.py
+    mkdir -p /opt/ppt2movie
+    cp /tmp/ppt2movie.py /opt/ppt2movie/ppt2movie.py
+    chmod +x /opt/ppt2movie/ppt2movie.py
 
 %environment
-    export PATH=/opt/ppt2vid:$PATH
+    export PATH=/opt/ppt2movie:$PATH
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
 
 %runscript
-    exec python3 /opt/ppt2vid/ppt2vid.py "$@"
+    exec python3 /opt/ppt2movie/ppt2movie.py "$@"
 
 %help
     PPT to Video Converter with AI voice narration.
 
     Usage:
-        singularity run ppt2vid.sif <presentation.pptx> [options]
+        singularity run ppt2movie.sif <presentation.pptx> [options]
 
     Options:
         --voice NAME       Edge TTS voice name (default: en-US-ChristopherNeural)
@@ -65,8 +65,8 @@ From: ubuntu:22.04
         --copyright TEXT   Copyright string for video metadata
 
     Examples:
-        singularity run ppt2vid.sif presentation.pptx
-        singularity run ppt2vid.sif presentation.pptx --output ~/Videos/talk.mp4
-        singularity run ppt2vid.sif presentation.pptx --output talk.wmv
-        singularity run ppt2vid.sif presentation.pptx --voice en-GB-RyanNeural --silent 5
-        singularity run ppt2vid.sif presentation.pptx --author "Jane Smith" --group "Research Lab"
+        singularity run ppt2movie.sif presentation.pptx
+        singularity run ppt2movie.sif presentation.pptx --output ~/Videos/talk.mp4
+        singularity run ppt2movie.sif presentation.pptx --output talk.wmv
+        singularity run ppt2movie.sif presentation.pptx --voice en-GB-RyanNeural --silent 5
+        singularity run ppt2movie.sif presentation.pptx --author "Jane Smith" --group "Research Lab"
