@@ -1,6 +1,6 @@
 # PPT to Video Converter
 
-**Version 0.1**
+**Version 0.2**
 
 Converts a PowerPoint presentation (`.pptx` or `.ppt`) to an MP4 video. An AI voice reads
 the presenter notes for each slide. Slides without notes are displayed silently
