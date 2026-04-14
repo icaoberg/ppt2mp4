@@ -127,3 +127,15 @@ truncates to the shorter of the two lists and prints a warning.
 **Poor slide rendering quality**
 Increase the DPI by editing `dpi=150` in `convert_pptx_to_images()` inside
 `ppt2movie.py`. Higher DPI produces sharper images but takes longer.
+
+---
+
+Copyright (C) 2026 icaoberg, Carnegie Mellon University
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the [GNU General Public License](LICENSE) for more details.
