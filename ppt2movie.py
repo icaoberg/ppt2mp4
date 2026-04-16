@@ -77,7 +77,8 @@ from PIL import Image                   # noqa: E402
 # Defaults
 # ---------------------------------------------------------------------------
 
-DEFAULT_VOICE = "en-US-ChristopherNeural"   # Microsoft neural TTS voice
+DEFAULT_VOICE_MICROSOFT = "en-US-ChristopherNeural"   # Microsoft neural TTS voice
+DEFAULT_VOICE_ELEVENLABS = "Rachel"                   # ElevenLabs TTS voice
 DEFAULT_SILENCE = 3.0                  # seconds for slides without notes
 VIDEO_FPS = 24
 VIDEO_WIDTH = 1920
@@ -164,12 +165,45 @@ def convert_pptx_to_images(pptx_path: str, output_dir: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Step 3 – Generate TTS audio with edge-tts
+# Step 3 – Generate TTS audio
 # ---------------------------------------------------------------------------
 
-async def _tts(text: str, path: str, voice: str) -> None:
+async def _tts_microsoft(text: str, path: str, voice: str) -> None:
     communicate = edge_tts.Communicate(text, voice)
     await communicate.save(path)
+
+
+def _tts_elevenlabs(text: str, path: str, voice: str) -> None:
+    try:
+        from elevenlabs.client import ElevenLabs
+    except ImportError:
+        print("Missing package 'elevenlabs'. Install it with:\n  pip install elevenlabs\n")
+        sys.exit(1)
+
+    api_key = os.environ.get("ELEVENLABS_API_KEY")
+    if not api_key:
+        print("Error: ELEVENLABS_API_KEY environment variable is not set.")
+        sys.exit(1)
+
+    client = ElevenLabs(api_key=api_key)
+
+    # Resolve voice name to voice_id; fall back to treating the value as an ID.
+    voice_id = voice
+    voices_response = client.voices.get_all()
+    for v in voices_response.voices:
+        if v.name.lower() == voice.lower() or v.voice_id == voice:
+            voice_id = v.voice_id
+            break
+
+    audio_chunks = client.text_to_speech.convert(
+        voice_id=voice_id,
+        text=text,
+        model_id="eleven_multilingual_v2",
+    )
+
+    with open(path, "wb") as f:
+        for chunk in audio_chunks:
+            f.write(chunk)
 
 
 def _audio_duration(path: str) -> float:
@@ -183,17 +217,22 @@ async def generate_audio_files(
     notes: list[str],
     audio_dir: str,
     voice: str,
+    library: str = "microsoft",
 ) -> list[tuple[str | None, float]]:
     """
     For each note, generate an MP3 file and return (path, duration).
     Slides without notes get (None, silence_duration).
+    Uses Microsoft edge-tts when library='microsoft', ElevenLabs when library='elevenlabs'.
     """
     results: list[tuple[str | None, float]] = []
     for i, note in enumerate(notes):
         if note:
             path = os.path.join(audio_dir, f"audio_{i + 1:04d}.mp3")
             print(f"  Slide {i + 1}: generating narration ({len(note)} chars) …")
-            await _tts(note, path, voice)
+            if library == "elevenlabs":
+                _tts_elevenlabs(note, path, voice)
+            else:
+                await _tts_microsoft(note, path, voice)
             duration = _audio_duration(path)
             results.append((path, duration))
         else:
@@ -301,12 +340,25 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("pptx_file", help="Path to the input .pptx/.ppt file.")
     parser.add_argument(
+        "--library",
+        choices=["microsoft", "elevenlabs"],
+        default="microsoft",
+        help=(
+            "TTS library to use for narration (default: %(default)s). "
+            "'microsoft' uses Microsoft Neural TTS via edge-tts. "
+            "'elevenlabs' uses ElevenLabs TTS (requires ELEVENLABS_API_KEY env var)."
+        ),
+    )
+    parser.add_argument(
         "--voice",
-        default=DEFAULT_VOICE,
+        default=None,
         metavar="NAME",
         help=(
-            "Edge TTS voice name (default: %(default)s). "
-            "Run `edge-tts --list-voices` to see all available voices."
+            "TTS voice name or ID. "
+            f"Default for microsoft: {DEFAULT_VOICE_MICROSOFT}. "
+            f"Default for elevenlabs: {DEFAULT_VOICE_ELEVENLABS}. "
+            "For Microsoft, run `edge-tts --list-voices` to see available voices. "
+            "For ElevenLabs, pass a voice name or voice_id from your ElevenLabs account."
         ),
     )
     parser.add_argument(
@@ -371,12 +423,19 @@ def main() -> None:
         sys.exit(1)
     fmt = FORMAT_MAP[ext]
 
+    # Resolve voice default based on chosen library
+    if args.voice is None:
+        voice = DEFAULT_VOICE_ELEVENLABS if args.library == "elevenlabs" else DEFAULT_VOICE_MICROSOFT
+    else:
+        voice = args.voice
+
     print("=" * 60)
     print("PPT → Video converter")
     print("=" * 60)
     print(f"  Input  : {pptx_path}")
     print(f"  Output : {output_path}")
-    print(f"  Voice  : {args.voice}")
+    print(f"  Library: {args.library}")
+    print(f"  Voice  : {voice}")
     print(f"  Silence: {args.silent}s per slide without notes")
     print(f"  Author : {args.author}")
     print(f"  Group  : {args.group}")
@@ -410,7 +469,7 @@ def main() -> None:
         # 3. TTS audio
         print("Step 3 – Generating AI narration …")
         audio_info = asyncio.run(
-            generate_audio_files(notes, tmpdir, args.voice)
+            generate_audio_files(notes, tmpdir, voice, args.library)
         )
         print()
 

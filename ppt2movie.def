@@ -29,7 +29,8 @@ From: ubuntu:22.04
         edge-tts \
         "moviepy<2" \
         pdf2image \
-        pillow
+        pillow \
+        elevenlabs
 
     # Install the script
     mkdir -p /opt/ppt2movie
@@ -51,7 +52,12 @@ From: ubuntu:22.04
         singularity run ppt2movie.sif <presentation.pptx> [options]
 
     Options:
-        --voice NAME       Edge TTS voice name (default: en-US-ChristopherNeural)
+        --library NAME     TTS library: 'microsoft' (default) or 'elevenlabs'
+                             'elevenlabs' requires ELEVENLABS_API_KEY env var
+        --voice NAME       TTS voice name or ID
+                             Microsoft default: en-US-ChristopherNeural
+                             ElevenLabs default: Rachel
+                             Run `edge-tts --list-voices` for Microsoft options
         --silent SECONDS   Duration for slides without notes (default: 3.0)
         --output PATH      Output video path. Format is selected by file extension:
                              .mp4 / .m4v   H.264 + AAC      (default)
@@ -70,3 +76,4 @@ From: ubuntu:22.04
         singularity run ppt2movie.sif presentation.pptx --output talk.wmv
         singularity run ppt2movie.sif presentation.pptx --voice en-GB-RyanNeural --silent 5
         singularity run ppt2movie.sif presentation.pptx --author "Jane Smith" --group "Research Lab"
+        singularity run ppt2movie.sif presentation.pptx --library elevenlabs --voice Rachel

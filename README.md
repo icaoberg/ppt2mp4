@@ -6,11 +6,13 @@ Converts a PowerPoint presentation (`.pptx` or `.ppt`) to an MP4 video. An AI vo
 the presenter notes for each slide. Slides without notes are displayed silently
 for a configurable duration.
 
+Supports two TTS backends: **Microsoft Neural TTS** (free, no API key) and **ElevenLabs** (requires an API key).
+
 ## How It Works
 
 1. **Extract notes** — reads presenter notes from each slide using `python-pptx`
 2. **Render slides** — converts the deck to images via LibreOffice (PPTX → PDF) and pdf2image (PDF → PNG)
-3. **Generate narration** — creates MP3 audio for each slide's notes using Microsoft's Neural TTS via `edge-tts` (free, no API key required)
+3. **Generate narration** — creates MP3 audio for each slide's notes using the chosen TTS library (`microsoft` or `elevenlabs`)
 4. **Assemble video** — combines slide images and audio into a single MP4 using `moviepy`
 
 ## Requirements
@@ -18,7 +20,7 @@ for a configurable duration.
 ### Python packages
 
 ```bash
-pip install python-pptx edge-tts "moviepy<2" pdf2image pillow
+pip install python-pptx edge-tts "moviepy<2" pdf2image pillow elevenlabs
 ```
 
 ### System packages
@@ -58,7 +60,8 @@ base filename (e.g. `presentation.pptx` → `presentation.mp4`).
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--voice NAME` | `en-US-ChristopherNeural` | Edge TTS voice to use for narration |
+| `--library NAME` | `microsoft` | TTS library: `microsoft` (edge-tts, free) or `elevenlabs` (requires `ELEVENLABS_API_KEY`) |
+| `--voice NAME` | see below | TTS voice name or ID (default depends on `--library`) |
 | `--silent SECONDS` | `3.0` | Duration to show slides that have no presenter notes |
 | `--output PATH` | same name as input | Override the output MP4 path |
 | `--author NAME` | `Ivan Cao-Berg` | Author name embedded in video metadata |
@@ -69,10 +72,16 @@ base filename (e.g. `presentation.pptx` → `presentation.mp4`).
 ### Examples
 
 ```bash
-# Basic usage
+# Basic usage (Microsoft TTS, default)
 python ppt2movie.py "Taming Data Dragons - Introduction.pptx"
 
-# Use a British male voice
+# Use ElevenLabs TTS
+ELEVENLABS_API_KEY=your_key python ppt2movie.py presentation.pptx --library elevenlabs
+
+# Use ElevenLabs with a specific voice
+ELEVENLABS_API_KEY=your_key python ppt2movie.py presentation.pptx --library elevenlabs --voice Adam
+
+# Use a British male voice (Microsoft)
 python ppt2movie.py presentation.pptx --voice en-GB-RyanNeural
 
 # Show silent slides for 5 seconds
@@ -87,20 +96,25 @@ python ppt2movie.py presentation.pptx --author "Jane Smith" --group "Research La
 
 ### Browsing available voices
 
+**Microsoft** (edge-tts):
 ```bash
 edge-tts --list-voices
 ```
 
-Some popular voices:
+Some popular Microsoft voices:
 
 | Voice name | Language / Style |
 |------------|-----------------|
-| `en-US-ChristopherNeural` | English (US), male |
+| `en-US-ChristopherNeural` | English (US), male (default) |
 | `en-US-JennyNeural` | English (US), female |
 | `en-US-GuyNeural` | English (US), male |
 | `en-GB-SoniaNeural` | English (UK), female |
 | `en-GB-RyanNeural` | English (UK), male |
 | `en-AU-NatashaNeural` | English (AU), female |
+
+**ElevenLabs**: pass a voice name (e.g. `Rachel`, `Adam`, `Bella`) or a voice ID from your ElevenLabs account. The default is `Rachel`.
+
+> **Note:** ElevenLabs requires the `ELEVENLABS_API_KEY` environment variable to be set.
 
 ## Adding Presenter Notes in PowerPoint
 
